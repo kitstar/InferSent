@@ -44,7 +44,7 @@ parser.add_argument("--minlr", type=float, default=1e-5, help="minimum lr")
 parser.add_argument("--max_norm", type=float, default=5., help="max norm (grad clipping)")
 
 # model
-parser.add_argument("--encoder_type", type=str, default='InferSentV1', help="see list of encoders")
+parser.add_argument("--encoder_type", type=str, default='InferSent', help="see list of encoders")
 parser.add_argument("--enc_lstm_dim", type=int, default=2048, help="encoder nhid dimension")
 parser.add_argument("--n_enc_layers", type=int, default=1, help="encoder num layers")
 parser.add_argument("--fc_dim", type=int, default=512, help="nhid of fc layers")
@@ -214,12 +214,12 @@ def trainepoch(epoch):
                             stidx, round(np.mean(all_costs), 2),
                             int(len(all_costs) * params.batch_size / (time.time() - last_time)),
                             int(words_count * 1.0 / (time.time() - last_time)),
-                            round(100.*correct/(stidx+k), 2)))
+                            round(100.*correct.tolist()/(stidx+k), 2)))
             print(logs[-1])
             last_time = time.time()
             words_count = 0
             all_costs = []
-    train_acc = round(100 * correct/len(s1), 2)
+    train_acc = round(100. * correct.tolist()/len(s1))
     print('results : epoch {0} ; mean accuracy train : {1}'
           .format(epoch, train_acc))
     return train_acc
@@ -251,7 +251,7 @@ def evaluate(epoch, eval_type='valid', final_eval=False):
         correct += pred.long().eq(tgt_batch.data.long()).cpu().sum()
 
     # save model
-    eval_acc = round(100 * correct / len(s1), 2)
+    eval_acc = round(100 * correct.tolist() / len(s1), 2)
     if final_eval:
         print('finalgrep : accuracy {0} : {1}'.format(eval_type, eval_acc))
     else:
@@ -292,7 +292,7 @@ while not stop_training and epoch <= params.n_epochs:
     epoch += 1
 
 # Run best model on test set.
-nli_net.load_state_dict(os.path.join(params.outputdir, params.outputmodelname))
+nli_net.load_state_dict(torch.load(os.path.join(params.outputdir, params.outputmodelname)))
 
 print('\nTEST : Epoch {0}'.format(epoch))
 evaluate(1e6, 'valid', True)
